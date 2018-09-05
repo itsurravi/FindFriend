@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "703071021882",
+    "firebase_url": "https://findmyfriend-c11b4.firebaseio.com",
+    "project_id": "findmyfriend-c11b4",
+    "storage_bucket": "findmyfriend-c11b4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:703071021882:android:aef02b4865b0138d",
+        "android_client_info": {
+          "package_name": "com.ravisharma.findmyfriend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "703071021882-8spsgjgjse7a2pi72n4u30kgadlvk1qm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ravisharma.findmyfriend",
+            "certificate_hash": "7c4e59cab95ec69955831d9243625bfe2890a814"
+          }
+        },
+        {
+          "client_id": "703071021882-159uvofamlfrctjaf52v6ouk89tsu4b2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBha7-K_TODZh-IR6W8qtkxuXPY6sUCOqg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "703071021882-159uvofamlfrctjaf52v6ouk89tsu4b2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:703071021882:android:20c97bdd082a2d46",
+        "android_client_info": {
+          "package_name": "com.ravisharma.googlemapsdemo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "703071021882-evbsrj0jeh3ont88jleljglja7k224j9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ravisharma.googlemapsdemo",
+            "certificate_hash": "7c4e59cab95ec69955831d9243625bfe2890a814"
+          }
+        },
+        {
+          "client_id": "703071021882-159uvofamlfrctjaf52v6ouk89tsu4b2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBha7-K_TODZh-IR6W8qtkxuXPY6sUCOqg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "703071021882-159uvofamlfrctjaf52v6ouk89tsu4b2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
