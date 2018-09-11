@@ -1,7 +1,6 @@
 package com.ravisharma.findfriend.Activities;
 
 import android.Manifest;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -9,8 +8,6 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -23,7 +20,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -49,20 +45,19 @@ import com.ravisharma.findfriend.R;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProfileActivity extends AppCompatActivity implements LocationListener,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class ProfileActivity extends AppCompatActivity implements LocationListener {
 
     protected static final int REQUEST_CHECK_SETTINGS = 0x1;
 
     FirebaseAuth auth;
-    DatabaseReference userinfo, userlocation;
+    DatabaseReference userinfo, online_check, online, currentUserRef;
 
     TextView profile;
     ListView list;
-    List<UserInfo> userlist, mainList;
+    List<UserInfo> userlist, mainList, list_for_listview;
+    List<User_location> online_list;
 
     private Location curLoc;
-    private LocationManager manager;
     private LocationRequest request;
     private GoogleApiClient apiClient;
 
@@ -73,14 +68,17 @@ public class ProfileActivity extends AppCompatActivity implements LocationListen
 
         auth = FirebaseAuth.getInstance();
         userinfo = FirebaseDatabase.getInstance().getReference("UserInfo");
-        userlocation = FirebaseDatabase.getInstance().getReference("UserLocation");
+        online_check = FirebaseDatabase.getInstance().getReference().child(".info/connected");
+        online = FirebaseDatabase.getInstance().getReference("Online");
+        currentUserRef = online.child(FirebaseAuth.getInstance().getCurrentUser().getUid());
+
 
         list = findViewById(R.id.list);
         profile = findViewById(R.id.textView);
+
         userlist = new ArrayList<>();
         mainList = new ArrayList<>();
-
-        manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        list_for_listview = new ArrayList<>();
 
         String number = "Welcome " + auth.getCurrentUser().getPhoneNumber();
         profile.setText(number);
@@ -103,15 +101,14 @@ public class ProfileActivity extends AppCompatActivity implements LocationListen
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent i = new Intent(ProfileActivity.this, MapsActivity.class);
-                i.putExtra("user", mainList.get(position).getUid());
+                i.putExtra("user", list_for_listview.get(position).getUid());
+                i.putExtra("number", list_for_listview.get(position).getPhone());
                 startActivity(i);
             }
         });
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+    private void setData() {
         userinfo.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -133,9 +130,7 @@ public class ProfileActivity extends AppCompatActivity implements LocationListen
                     }
                 }
 
-                list.setAdapter(new UserList(ProfileActivity.this, mainList));
-
-                Toast.makeText(ProfileActivity.this, String.valueOf(mainList.size()), Toast.LENGTH_SHORT).show();
+                checkOnline(mainList);
             }
 
             @Override
@@ -143,6 +138,68 @@ public class ProfileActivity extends AppCompatActivity implements LocationListen
 
             }
         });
+
+
+    }
+
+    private void checkOnline(final List<UserInfo> mainList) {
+
+        online_list = new ArrayList<>();
+
+        online_check.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue(Boolean.class)) {
+                    currentUserRef.onDisconnect().removeValue();
+
+                    online.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                            .setValue(new User_location(String.valueOf(curLoc.getLongitude()),
+                                    String.valueOf(curLoc.getLatitude()), "online",
+                                    FirebaseAuth.getInstance().getCurrentUser().getUid()));
+
+                    online.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            online_list.clear();
+                            list_for_listview.clear();
+
+                            for(DataSnapshot sn : dataSnapshot.getChildren()) {
+                                User_location l = sn.getValue(User_location.class);
+                                online_list.add(l);
+                            }
+
+                            abc:
+                            for (int i = 0; i < mainList.size(); i++) {
+                                for (int j = 0; j < online_list.size(); j++) {
+                                    if (mainList.get(i).getUid().equals(online_list.get(j).getUid())) {
+                                        list_for_listview.add(mainList.get(i));
+                                        continue abc;
+                                    }
+                                }
+                            }
+
+                            setListView(list_for_listview);
+
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    });
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    public void setListView(List<UserInfo> list_for_listview) {
+        list.setAdapter(new UserList(ProfileActivity.this, list_for_listview));
     }
 
     @Override
@@ -241,29 +298,13 @@ public class ProfileActivity extends AppCompatActivity implements LocationListen
         }
     }
 
-
-    //Google api client methods
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
-
     //LocationListener method
     @Override
     public void onLocationChanged(Location location) {
         curLoc = location;
-        User_location u = new User_location(String.valueOf(curLoc.getLongitude()), String.valueOf(curLoc.getLatitude()));
-        userlocation.child(auth.getCurrentUser().getUid()).setValue(u);
+        setData();
+//        User_location u = new User_location(String.valueOf(curLoc.getLongitude()), String.valueOf(curLoc.getLatitude()), "online");
+//        locations.child(auth.getCurrentUser().getUid()).setValue(u);
     }
 
 
@@ -272,7 +313,7 @@ public class ProfileActivity extends AppCompatActivity implements LocationListen
         super.onDestroy();
         if (apiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(apiClient, this);
-            userlocation.child(auth.getCurrentUser().getUid()).removeValue();
+//            locations.child(auth.getCurrentUser().getUid()).removeValue();
         }
     }
 }
