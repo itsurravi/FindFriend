@@ -7,7 +7,6 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -60,7 +59,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
 
-    DatabaseReference userlocation;
+    DatabaseReference userloc_ref, myloc_ref;
 
     String uid, phone;
 
@@ -77,8 +76,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         uid = b.getString("user");
         phone = b.getString("number");
 
-        userlocation = FirebaseDatabase.getInstance().getReference("Online").child(uid);
-
+        userloc_ref = FirebaseDatabase.getInstance().getReference("Online").child(uid);
+        myloc_ref = FirebaseDatabase.getInstance().getReference("Online").child(FirebaseAuth.getInstance().getCurrentUser().getUid());
 
     }
 
@@ -102,8 +101,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onConnected(Bundle bundle) {
 
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(10000);
+        mLocationRequest.setInterval(5000);
+        mLocationRequest.setFastestInterval(3000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
@@ -126,7 +125,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mCurrLocationMarker.remove();
         }
 
-        userlocation.setValue(new User_location(String.valueOf(mLastLocation.getLongitude()), String.valueOf(mLastLocation.getLatitude()), "online", uid));
+        myloc_ref.setValue(new User_location(String.valueOf(mLastLocation.getLongitude()), String.valueOf(mLastLocation.getLatitude()), "online", FirebaseAuth.getInstance().getCurrentUser().getUid()));
 
         fetchData();
     }
@@ -148,7 +147,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void fetchData() {
-        userlocation.addValueEventListener(new ValueEventListener() {
+        userloc_ref.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 // TO-DO:
@@ -169,9 +168,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
+    boolean path = false;
+
     private void showOnMap(double latitude, double longitude) {
         mMap.clear();
-
         Location l = new Location("");
         l.setLatitude(latitude);
         l.setLongitude(longitude);
@@ -183,18 +183,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         markerOptions.snippet("Distance" + new DecimalFormat("#.#").format((mLastLocation.distanceTo(l)) / 1000) + " km");
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
 
-        mMap.addMarker(markerOptions);
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(location));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(13));
+        mCurrLocationMarker = mMap.addMarker(markerOptions);
 
-        LatLng origin = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-        // Getting URL to the Google Directions API
-        String url = getDirectionsUrl(origin, location);
+        if(!path) {
 
-        DownloadTask downloadTask = new DownloadTask();
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(location));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(13));
 
-        // Start downloading json data from Google Directions API
-        downloadTask.execute(url);
+            LatLng origin = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            // Getting URL to the Google Directions API
+            String url = getDirectionsUrl(origin, location);
+
+            DownloadTask downloadTask = new DownloadTask();
+
+            // Start downloading json data from Google Directions API
+            downloadTask.execute(url);
+            path=true;
+        }
     }
 
     private class DownloadTask extends AsyncTask<String, Void, String> {
